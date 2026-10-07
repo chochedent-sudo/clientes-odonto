@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Clientes v5.0</title>
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #64748b;
+      --line: #d9e2ef;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --danger-dark: #b91c1c;
+      --success: #16a34a;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 22px 24px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: #cbd5e1;
+    }
+
+    .connection-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 12px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: #334155;
+      color: #e2e8f0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .connection-status::before {
+      content: '';
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #f59e0b;
+    }
+
+    .connection-status.connected::before {
+      background: #22c55e;
+    }
+
+    .connection-status.error::before {
+      background: #ef4444;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 28px auto;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .form-panel {
+      padding: 22px;
+    }
+
+    .form-panel h2,
+    .list-panel h2,
+    .deleted-panel h2 {
+      margin: 0 0 18px;
+      font-size: 22px;
+    }
+
+    form {
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-weight: 700;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 11px 12px;
+      font-size: 15px;
+      color: var(--text);
+      background: #ffffff;
+    }
+
+    textarea {
+      min-height: 86px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 3px solid rgba(37, 99, 235, 0.18);
+      border-color: var(--primary);
+    }
+
+    .form-actions,
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 11px 14px;
+      color: #ffffff;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--success);
+    }
+
+    .btn-secondary {
+      background: #475569;
+    }
+
+    .btn-edit {
+      background: var(--primary);
+    }
+
+    .btn-edit:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background: var(--danger-dark);
+    }
+
+    .btn-restore {
+      background: #0891b2;
+    }
+
+    .btn-delete {
+      background: #ef4444;
+    }
+
+    .list-panel,
+    .deleted-panel {
+      overflow: hidden;
+    }
+
+    .list-header {
+      padding: 22px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .list-header h2 {
+      margin: 0;
+    }
+
+    .counter {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #334155;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    td {
+      font-size: 15px;
+    }
+
+    .empty-state {
+      padding: 36px 22px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .status {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status.active {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status.inactive {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .money {
+      font-weight: 700;
+      color: #0f766e;
+      white-space: nowrap;
+    }
+
+    .message {
+      display: none;
+      margin-top: 14px;
+      padding: 11px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .message.warn {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .stale-alert { margin: 0 auto 18px; width: min(1180px, calc(100% - 32px)); padding: 14px 16px; border: 1px solid #f59e0b; background: #fffbeb; color: #92400e; border-radius: 8px; display: none; }
+    .stale-alert.show { display: block; }
+    .install-modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.58); display: none; place-items: center; z-index: 9999; padding: 18px; }
+    .install-modal-backdrop.show { display: grid; }
+    .install-modal { width: min(460px,100%); background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+    .install-modal h2 { margin-top: 0; }
+    .install-modal-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+    .btn-install { background:#16a34a; }
+    .btn-install-settings { background:#7c3aed; }
+    .stale-row { background:#fff7ed; }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .list-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sistema de Clientes</h1>
+    <p>Version 5.0 - Firebase, alertas de clientes e instalacion PWA.</p>
+    <div class="connection-status" id="connectionStatus" role="status" aria-live="polite">Conectando con Firebase...</div>
+  </header>
+
+  <div class="stale-alert" id="staleAlert" role="alert"></div>
+
+  <main>
+    <section class="form-panel">
+      <h2 id="formTitle">Agregar cliente</h2>
+      <form id="clientForm">
+        <label>
+          Nombre completo
+          <input id="name" type="text" placeholder="Ej. Juan Perez" required>
+        </label>
+
+        <label>
+          Telefono
+          <input id="phone" type="tel" placeholder="Ej. 5551234567" required>
+        </label>
+
+        <label>
+          Correo electronico
+          <input id="email" type="email" placeholder="cliente@correo.com" required>
+        </label>
+
+        <label>
+          Estado
+          <select id="status" required>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+        </label>
+
+        <label>
+          Cantidad de compras
+          <input id="purchaseCount" type="number" min="0" step="1" placeholder="Ej. 3" required>
+        </label>
+
+        <label>
+          Monto comprado
+          <input id="purchaseAmount" type="number" min="0" step="0.01" placeholder="Ej. 1500.00" required>
+        </label>
+
+        <label>
+          Fecha de ultima compra
+          <input id="lastPurchaseDate" type="date">
+        </label>
+
+        <label>
+          Direccion
+          <textarea id="address" placeholder="Direccion del cliente"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button class="btn-primary" type="submit" id="saveButton">Guardar cliente</button>
+          <button class="btn-secondary" type="button" id="cancelEditButton" hidden>Cancelar edicion</button>
+        </div>
+      </form>
+      <div class="message" id="message"></div>
+    </section>
+
+    <section class="list-panel">
+      <div class="list-header">
+        <div>
+          <h2>Listado de clientes</h2>
+          <div class="counter" id="clientCounter">0 clientes registrados</div>
+        </div>
+        <div class="toolbar">
+          <button class="btn-danger" type="button" id="removeDuplicatesButton">Quitar clientes repetidos</button>
+          <button class="btn-install-settings" type="button" id="installPromptToggleButton">Ocultar aviso PWA</button>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Telefono</th>
+              <th>Correo</th>
+              <th>Estado</th>
+              <th>Compras</th>
+              <th>Monto comprado</th>
+              <th>Ultima compra</th>
+              <th>Direccion</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="clientTableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState">Aun no hay clientes registrados.</div>
+    </section>
+
+    <section class="deleted-panel">
+      <div class="list-header">
+        <div>
+          <h2>Clientes eliminados</h2>
+          <div class="counter" id="deletedCounter">0 clientes eliminados</div>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="deletedTableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Telefono</th>
+              <th>Correo</th>
+              <th>Estado</th>
+              <th>Compras</th>
+              <th>Monto comprado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="deletedTableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="deletedEmptyState">No hay clientes eliminados.</div>
+    </section>
+  </main>
+
+  <div class="install-modal-backdrop" id="installModal" aria-hidden="true">
+    <div class="install-modal" role="dialog" aria-modal="true" aria-labelledby="installTitle">
+      <h2 id="installTitle">Instala el Sistema de Clientes</h2>
+      <p>Instala esta aplicacion en tu dispositivo para abrirla como una app.</p>
+      <div class="install-modal-actions">
+        <button class="btn-install" type="button" id="installPwaButton">Instalar PWA</button>
+        <button class="btn-secondary" type="button" id="closeInstallModal">Ahora no</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+    import {
+      addDoc,
+      collection,
+      doc,
+      getFirestore,
+      onSnapshot,
+      serverTimestamp,
+      updateDoc,
+      writeBatch
+    } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyAwguFsOl7_cns1NNzzNsORe-09DynpCfg',
+      authDomain: 'crp-rpm.firebaseapp.com',
+      projectId: 'crp-rpm',
+      storageBucket: 'crp-rpm.firebasestorage.app',
+      messagingSenderId: '1024250077356',
+      appId: '1:1024250077356:web:a892da31c5d22baeb03f09'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const clientsCollection = collection(db, 'clients');
+    const deletedClientsCollection = collection(db, 'deletedClients');
+
+    const form = document.getElementById('clientForm');
+    const nameInput = document.getElementById('name');
+    const phoneInput = document.getElementById('phone');
+    const emailInput = document.getElementById('email');
+    const statusInput = document.getElementById('status');
+    const purchaseCountInput = document.getElementById('purchaseCount');
+    const purchaseAmountInput = document.getElementById('purchaseAmount');
+    const lastPurchaseDateInput = document.getElementById('lastPurchaseDate');
+    const addressInput = document.getElementById('address');
+    const tableBody = document.getElementById('clientTableBody');
+    const deletedTableBody = document.getElementById('deletedTableBody');
+    const emptyState = document.getElementById('emptyState');
+    const deletedEmptyState = document.getElementById('deletedEmptyState');
+    const tableWrap = document.getElementById('tableWrap');
+    const deletedTableWrap = document.getElementById('deletedTableWrap');
+    const clientCounter = document.getElementById('clientCounter');
+    const deletedCounter = document.getElementById('deletedCounter');
+    const removeDuplicatesButton = document.getElementById('removeDuplicatesButton');
+    const cancelEditButton = document.getElementById('cancelEditButton');
+    const saveButton = document.getElementById('saveButton');
+    const formTitle = document.getElementById('formTitle');
+    const message = document.getElementById('message');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const staleAlert = document.getElementById('staleAlert');
+    const installModal = document.getElementById('installModal');
+    const installPwaButton = document.getElementById('installPwaButton');
+    const closeInstallModal = document.getElementById('closeInstallModal');
+    const installPromptToggleButton = document.getElementById('installPromptToggleButton');
+
+    let clients = [];
+    let deletedClients = [];
+    let editingClientId = null;
+    let currentUser = null;
+    let deferredInstallPrompt = null;
+    let installPromptEnabled = localStorage.getItem('installPromptEnabled') !== 'false';
+    const snapshotReady = { clients: false, deletedClients: false };
+
+    function setConnectionStatus(text, state = '') {
+      connectionStatus.textContent = text;
+      connectionStatus.className = `connection-status ${state}`.trim();
+    }
+
+    function setControlsEnabled(enabled) {
+      Array.from(form.elements).forEach((element) => {
+        element.disabled = !enabled;
+      });
+      removeDuplicatesButton.disabled = !enabled;
+    }
+
+    function firebaseErrorMessage(error) {
+      if (error?.code === 'auth/operation-not-allowed') {
+        return 'Activa el acceso Anónimo en Firebase Authentication.';
+      }
+      if (error?.code === 'permission-denied') {
+        return 'Firestore rechazó la operación. Revisa y publica las reglas de seguridad.';
+      }
+      if (error?.code === 'failed-precondition') {
+        return 'Primero crea la base de datos Cloud Firestore en Firebase.';
+      }
+      return error?.message || 'No fue posible completar la operación.';
+    }
+
+    function handleFirebaseError(error) {
+      console.error(error);
+      setConnectionStatus('Error de conexión con Firebase', 'error');
+      showMessage(firebaseErrorMessage(error), 'warn');
+    }
+
+    function normalize(value) {
+      return value.trim().toLowerCase();
+    }
+
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = `message show ${type}`;
+
+      window.clearTimeout(showMessage.timer);
+      showMessage.timer = window.setTimeout(() => {
+        message.className = 'message';
+      }, 3200);
+    }
+
+    function resetForm() {
+      form.reset();
+      editingClientId = null;
+      formTitle.textContent = 'Agregar cliente';
+      saveButton.textContent = 'Guardar cliente';
+      cancelEditButton.hidden = true;
+      nameInput.focus();
+    }
+
+    function getFormClient() {
+      return {
+        name: nameInput.value.trim(),
+        phone: phoneInput.value.trim(),
+        email: emailInput.value.trim(),
+        status: statusInput.value,
+        purchaseCount: Number(purchaseCountInput.value || 0),
+        purchaseAmount: Number(purchaseAmountInput.value || 0),
+        lastPurchaseDate: lastPurchaseDateInput.value || '',
+        address: addressInput.value.trim()
+      };
+    }
+
+    function mapSnapshot(snapshot) {
+      return snapshot.docs
+        .map((snapshotDoc) => ({ id: snapshotDoc.id, ...snapshotDoc.data() }))
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'es'));
+    }
+
+    function markSnapshotReady(collectionName) {
+      snapshotReady[collectionName] = true;
+      if (snapshotReady.clients && snapshotReady.deletedClients) {
+        setControlsEnabled(true);
+        setConnectionStatus('Firebase conectado y sincronizado', 'connected');
+      }
+    }
+
+    function startRealtimeSync() {
+      onSnapshot(clientsCollection, (snapshot) => {
+        clients = mapSnapshot(snapshot);
+        renderClients();
+        markSnapshotReady('clients');
+      }, handleFirebaseError);
+
+      onSnapshot(deletedClientsCollection, (snapshot) => {
+        deletedClients = mapSnapshot(snapshot);
+        renderClients();
+        markSnapshotReady('deletedClients');
+      }, handleFirebaseError);
+    }
+
+    function renderClients() {
+      tableBody.innerHTML = '';
+      deletedTableBody.innerHTML = '';
+      clientCounter.textContent = `${clients.length} ${clients.length === 1 ? 'cliente registrado' : 'clientes registrados'}`;
+      deletedCounter.textContent = `${deletedClients.length} ${deletedClients.length === 1 ? 'cliente eliminado' : 'clientes eliminados'}`;
+      emptyState.style.display = clients.length ? 'none' : 'block';
+      tableWrap.style.display = clients.length ? 'block' : 'none';
+      deletedEmptyState.style.display = deletedClients.length ? 'none' : 'block';
+      deletedTableWrap.style.display = deletedClients.length ? 'block' : 'none';
+      renderStaleClientAlert();
+
+      clients.forEach((client) => {
+        const row = document.createElement('tr');
+        if (daysSince(client.lastPurchaseDate) > 15) row.classList.add('stale-row');
+        row.innerHTML = `
+          <td>${escapeHtml(client.name)}</td>
+          <td>${escapeHtml(client.phone)}</td>
+          <td>${escapeHtml(client.email)}</td>
+          <td>${renderStatus(client.status)}</td>
+          <td>${Number(client.purchaseCount || 0)}</td>
+          <td><span class="money">${formatCurrency(client.purchaseAmount)}</span></td>
+          <td>${escapeHtml(formatDate(client.lastPurchaseDate))}</td>
+          <td>${escapeHtml(client.address || 'Sin direccion')}</td>
+          <td>
+            <button class="btn-edit" type="button" data-id="${client.id}">Editar</button>
+            <button class="btn-delete" type="button" data-id="${client.id}">Eliminar</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      deletedClients.forEach((client) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${escapeHtml(client.name)}</td>
+          <td>${escapeHtml(client.phone)}</td>
+          <td>${escapeHtml(client.email)}</td>
+          <td>${renderStatus(client.status)}</td>
+          <td>${Number(client.purchaseCount || 0)}</td>
+          <td><span class="money">${formatCurrency(client.purchaseAmount)}</span></td>
+          <td>
+            <button class="btn-restore" type="button" data-id="${client.id}">Reincorporar</button>
+          </td>
+        `;
+        deletedTableBody.appendChild(row);
+      });
+    }
+
+    function daysSince(dateString) {
+      if (!dateString) return -1;
+      const date = new Date(dateString + 'T00:00:00');
+      if (Number.isNaN(date.getTime())) return -1;
+      return Math.floor((Date.now() - date.getTime()) / 86400000);
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'Sin fecha';
+      const date = new Date(dateString + 'T00:00:00');
+      return Number.isNaN(date.getTime()) ? 'Sin fecha' : date.toLocaleDateString('es-MX');
+    }
+
+    function renderStaleClientAlert() {
+      const stale = clients.filter(client => daysSince(client.lastPurchaseDate) > 15);
+      if (!stale.length) { staleAlert.className = 'stale-alert'; staleAlert.textContent = ''; return; }
+      const names = stale.slice(0, 6).map(c => c.name).join(', ');
+      const extra = stale.length > 6 ? ` y ${stale.length - 6} mas` : '';
+      staleAlert.textContent = `Alerta: ${stale.length} cliente${stale.length === 1 ? '' : 's'} lleva${stale.length === 1 ? '' : 'n'} mas de 15 dias sin comprar: ${names}${extra}.`;
+      staleAlert.className = 'stale-alert show';
+    }
+
+    function renderStatus(status) {
+      const currentStatus = status || 'Activo';
+      const statusClass = currentStatus === 'Activo' ? 'active' : 'inactive';
+      return `<span class="status ${statusClass}">${escapeHtml(currentStatus)}</span>`;
+    }
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString('es-MX', {
+        style: 'currency',
+        currency: 'MXN'
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!currentUser) return;
+
+      const client = getFormClient();
+      saveButton.disabled = true;
+
+      try {
+        if (editingClientId) {
+          await updateDoc(doc(db, 'clients', editingClientId), {
+            ...client,
+            updatedAt: serverTimestamp(),
+            updatedBy: currentUser.uid
+          });
+          showMessage('Cliente actualizado y sincronizado.', 'ok');
+        } else {
+          await addDoc(clientsCollection, {
+            ...client,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            createdBy: currentUser.uid,
+            updatedBy: currentUser.uid
+          });
+          showMessage('Cliente agregado y sincronizado.', 'ok');
+        }
+        resetForm();
+      } catch (error) {
+        handleFirebaseError(error);
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+
+    tableBody.addEventListener('click', (event) => {
+      if (!event.target.matches('.btn-edit')) return;
+
+      const client = clients.find((item) => item.id === event.target.dataset.id);
+      if (!client) return;
+
+      editingClientId = client.id;
+      nameInput.value = client.name;
+      phoneInput.value = client.phone;
+      emailInput.value = client.email;
+      statusInput.value = client.status || 'Activo';
+      purchaseCountInput.value = Number(client.purchaseCount || 0);
+      purchaseAmountInput.value = Number(client.purchaseAmount || 0);
+      lastPurchaseDateInput.value = client.lastPurchaseDate || '';
+      addressInput.value = client.address;
+      formTitle.textContent = 'Editar cliente';
+      saveButton.textContent = 'Actualizar cliente';
+      cancelEditButton.hidden = false;
+      nameInput.focus();
+    });
+
+    tableBody.addEventListener('click', async (event) => {
+      if (!event.target.matches('.btn-delete')) return;
+
+      const client = clients.find((item) => item.id === event.target.dataset.id);
+      if (!client || !currentUser) return;
+
+      event.target.disabled = true;
+      const batch = writeBatch(db);
+      const deletedRef = doc(db, 'deletedClients', client.id);
+      const activeRef = doc(db, 'clients', client.id);
+
+      batch.set(deletedRef, {
+        name: client.name,
+        phone: client.phone,
+        email: client.email,
+        status: client.status || 'Activo',
+        purchaseCount: Number(client.purchaseCount || 0),
+        purchaseAmount: Number(client.purchaseAmount || 0),
+        lastPurchaseDate: client.lastPurchaseDate || '',
+        address: client.address || '',
+        originalId: client.id,
+        createdAt: client.createdAt || serverTimestamp(),
+        deletedAt: serverTimestamp(),
+        deletedBy: currentUser.uid
+      });
+      batch.delete(activeRef);
+
+      try {
+        await batch.commit();
+        resetForm();
+        showMessage('Cliente enviado a la lista de eliminados.', 'ok');
+      } catch (error) {
+        event.target.disabled = false;
+        handleFirebaseError(error);
+      }
+    });
+
+    deletedTableBody.addEventListener('click', async (event) => {
+      if (!event.target.matches('.btn-restore')) return;
+
+      const client = deletedClients.find((item) => item.id === event.target.dataset.id);
+      if (!client || !currentUser) return;
+
+      event.target.disabled = true;
+      const activeId = client.originalId || client.id;
+      const batch = writeBatch(db);
+
+      batch.set(doc(db, 'clients', activeId), {
+        name: client.name,
+        phone: client.phone,
+        email: client.email,
+        status: client.status || 'Activo',
+        purchaseCount: Number(client.purchaseCount || 0),
+        purchaseAmount: Number(client.purchaseAmount || 0),
+        lastPurchaseDate: client.lastPurchaseDate || '',
+        address: client.address || '',
+        createdAt: client.createdAt || serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: currentUser.uid,
+        updatedBy: currentUser.uid
+      });
+      batch.delete(doc(db, 'deletedClients', client.id));
+
+      try {
+        await batch.commit();
+        showMessage('Cliente reincorporado y sincronizado.', 'ok');
+      } catch (error) {
+        event.target.disabled = false;
+        handleFirebaseError(error);
+      }
+    });
+
+    cancelEditButton.addEventListener('click', resetForm);
+
+    removeDuplicatesButton.addEventListener('click', async () => {
+      const uniqueClients = new Map();
+      const duplicateIds = [];
+
+      clients.forEach((client) => {
+        const duplicateKey = `${normalize(client.name)}|${normalize(client.phone)}|${normalize(client.email)}`;
+        if (!uniqueClients.has(duplicateKey)) {
+          uniqueClients.set(duplicateKey, client);
+        } else {
+          duplicateIds.push(client.id);
+        }
+      });
+
+      if (!duplicateIds.length) {
+        showMessage('No se encontraron clientes repetidos.', 'warn');
+        return;
+      }
+
+      removeDuplicatesButton.disabled = true;
+      try {
+        for (let index = 0; index < duplicateIds.length; index += 450) {
+          const batch = writeBatch(db);
+          duplicateIds.slice(index, index + 450).forEach((clientId) => {
+            batch.delete(doc(db, 'clients', clientId));
+          });
+          await batch.commit();
+        }
+        resetForm();
+        showMessage(`Se quitaron ${duplicateIds.length} clientes repetidos.`, 'ok');
+      } catch (error) {
+        handleFirebaseError(error);
+      } finally {
+        removeDuplicatesButton.disabled = false;
+      }
+    });
+
+
+    function updateInstallToggleLabel() {
+      installPromptToggleButton.textContent = installPromptEnabled ? 'Ocultar aviso PWA' : 'Activar aviso PWA';
+    }
+
+    async function getPublicIpKey() {
+      try {
+        const response = await fetch('https://api.ipify.org?format=json', { cache: 'no-store' });
+        if (!response.ok) throw new Error('IP no disponible');
+        const data = await response.json();
+        return `pwaPromptCount:${data.ip}`;
+      } catch {
+        return 'pwaPromptCount:device';
+      }
+    }
+
+    async function maybeShowInstallModal() {
+      if (!installPromptEnabled || window.matchMedia('(display-mode: standalone)').matches) return;
+      const key = await getPublicIpKey();
+      const count = Number(localStorage.getItem(key) || 0);
+      if (count >= 3) return;
+      localStorage.setItem(key, String(count + 1));
+      installModal.classList.add('show');
+      installModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function hideInstallModal() {
+      installModal.classList.remove('show');
+      installModal.setAttribute('aria-hidden', 'true');
+    }
+
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+    });
+
+    installPwaButton.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) {
+        showMessage('Usa la opcion Instalar aplicacion de tu navegador si no aparece el instalador automatico.', 'warn');
+        hideInstallModal();
+        return;
+      }
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      hideInstallModal();
+    });
+
+    closeInstallModal.addEventListener('click', hideInstallModal);
+    installPromptToggleButton.addEventListener('click', () => {
+      installPromptEnabled = !installPromptEnabled;
+      localStorage.setItem('installPromptEnabled', String(installPromptEnabled));
+      updateInstallToggleLabel();
+      if (!installPromptEnabled) hideInstallModal();
+      else maybeShowInstallModal();
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.error));
+    }
+
+    updateInstallToggleLabel();
+    window.addEventListener('load', () => setTimeout(maybeShowInstallModal, 900));
+
+    setControlsEnabled(false);
+    renderClients();
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user || currentUser) return;
+      currentUser = user;
+      startRealtimeSync();
+    });
+
+    signInAnonymously(auth).catch(handleFirebaseError);
+  </script>
+</body>
+</html>
